@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Strategy — Disney Marketing Platform</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06101E;--surface:#0D1929;--surface2:#14243A;--surface3:#1C304E;
+  --border:#1E2D48;--border2:#28405E;
+  --text:#DCE8F5;--muted:#7A90AA;--subtle:#3A4D66;
+  --blue:#3D7BCC;--blue-l:rgba(61,123,204,.15);--blue-d:#2C5B9A;
+  --gold:#F0C040;--gold-l:rgba(240,192,64,.12);
+  --green:#4ADE80;--red:#F87171;--purple:#A78BFA;--purple-l:rgba(167,139,250,.12);
+  --navy-text:#0A1628;
+}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:14px;background:var(--bg);color:var(--text);overflow:hidden}
+
+/* ── WELCOME ──────────────────────────── */
+#welcome{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 24px;transition:opacity .4s,transform .4s;z-index:10;background:var(--bg)}
+#welcome.out{opacity:0;transform:translateY(-14px);pointer-events:none}
+
+.w-logo{display:flex;align-items:center;gap:10px;margin-bottom:44px}
+.w-badge{background:var(--blue);color:#fff;font-weight:800;font-size:11px;padding:4px 10px;border-radius:6px;letter-spacing:.8px;text-transform:uppercase}
+.w-name{font-size:14px;font-weight:400;color:var(--muted);letter-spacing:.2px}
+
+.w-greeting{font-size:30px;font-weight:600;color:var(--text);text-align:center;margin-bottom:6px;letter-spacing:-.5px}
+.w-sub{font-size:15px;color:var(--muted);margin-bottom:32px;font-weight:300;text-align:center}
+
+.w-input-wrap{width:100%;max-width:600px;background:var(--surface);border:1px solid var(--border2);border-radius:14px;display:flex;align-items:flex-end;padding:12px 14px;gap:10px;transition:border-color .2s,box-shadow .2s;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+.w-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,123,204,.2)}
+#w-input{flex:1;border:none;outline:none;font-size:15px;font-family:inherit;color:var(--text);background:transparent;resize:none;max-height:160px;line-height:1.5;padding:2px 0}
+#w-input::placeholder{color:var(--subtle)}
+.w-send{width:34px;height:34px;border-radius:8px;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+.w-send:hover{background:var(--blue-d)}
+.w-send svg{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.w-pills{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:600px;margin-bottom:44px}
+.w-pill{display:flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--border2);border-radius:24px;padding:8px 16px;cursor:pointer;font-size:12px;color:var(--muted);transition:all .15s;white-space:nowrap}
+.w-pill:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-l)}
+
+.w-footer{font-size:11px;color:var(--subtle);display:flex;align-items:center;gap:14px}
+.w-footer-link{color:var(--subtle);cursor:pointer;transition:color .15s}
+.w-footer-link:hover{color:var(--muted)}
+.w-active{display:flex;align-items:center;gap:6px}
+.w-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* ── CHAT ─────────────────────────────── */
+#chat{position:fixed;inset:0;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity .35s;background:var(--bg)}
+#chat.in{opacity:1;pointer-events:all}
+
+.chat-bar{height:52px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0}
+.cb-logo{display:flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none}
+.cb-badge{background:var(--blue);color:#fff;font-weight:800;font-size:10px;padding:2px 8px;border-radius:4px;letter-spacing:.5px}
+.cb-name{font-size:13px;font-weight:400;color:var(--muted)}
+.cb-right{margin-left:auto;display:flex;gap:7px;align-items:center}
+.cb-btn{background:transparent;border:1px solid var(--border2);color:var(--muted);font-size:11px;padding:5px 11px;border-radius:6px;cursor:pointer;transition:all .15s;font-family:inherit}
+.cb-btn:hover{border-color:var(--blue);color:var(--blue)}
+.cb-count{background:var(--blue);color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px}
+
+.messages{flex:1;overflow-y:auto;padding:28px 16px;display:flex;flex-direction:column;gap:14px}
+.msg-outer{display:flex;justify-content:center}
+.msg-inner{width:100%;max-width:720px}
+.msg-row{display:flex;gap:12px;align-items:flex-end}
+.msg-row.user{flex-direction:row-reverse}
+.av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;letter-spacing:.3px}
+.av.bot{background:var(--blue);color:#fff}
+.av.user{background:var(--surface2);color:var(--muted);border:1px solid var(--border2)}
+.bubble{padding:11px 15px;border-radius:18px;line-height:1.6;font-size:13.5px;max-width:520px}
+.bubble.bot{background:var(--surface);border:1px solid var(--border2);border-bottom-left-radius:4px}
+.bubble.user{background:var(--surface2);border:1px solid var(--border2);border-bottom-right-radius:4px}
+
+.typing-outer{display:flex;justify-content:center}
+.typing-inner{width:100%;max-width:720px}
+.typing-row{display:flex;gap:12px;align-items:flex-end}
+.typing-bub{background:var(--surface);border:1px solid var(--border2);border-radius:18px;border-bottom-left-radius:4px;padding:13px 16px;display:flex;gap:4px}
+.dot{width:5px;height:5px;border-radius:50%;background:var(--subtle);animation:bonce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bonce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-5px)}}
+
+.chip-outer{display:flex;justify-content:center}
+.chip-inner{width:100%;max-width:720px;padding-left:40px}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--surface);border:1px solid var(--border2);color:var(--muted);border-radius:20px;padding:5px 12px;font-size:12px;cursor:pointer;transition:all .12s;white-space:nowrap;font-family:inherit}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+
+/* STRATEGY CARDS */
+.card-outer{display:flex;justify-content:center}
+.card-inner{width:100%;max-width:720px;padding-left:40px}
+
+/* BRIEF CARD */
+.brief-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;max-width:580px;font-size:12px}
+.bc-hdr{background:linear-gradient(135deg,#0D2A52,#1A3D72);padding:16px 18px;border-bottom:1px solid var(--border)}
+.bc-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,.5);margin-bottom:6px}
+.bc-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:3px;letter-spacing:-.3px}
+.bc-meta{font-size:11px;color:rgba(255,255,255,.55)}
+.bc-section{padding:12px 18px;border-bottom:1px solid var(--border)}
+.bc-section:last-child{border:none}
+.bc-sec-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--blue);margin-bottom:6px}
+.bc-text{font-size:12px;color:var(--muted);line-height:1.65}
+.bc-text strong{color:var(--text)}
+.bc-pill{display:inline-block;background:var(--blue-l);color:var(--blue);font-size:10px;font-weight:600;padding:2px 8px;border-radius:4px;margin:2px 4px 2px 0}
+.bc-actions{padding:12px 18px;display:flex;gap:8px;border-top:1px solid var(--border);background:var(--surface2)}
+.btn-p{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s}
+.btn-p:hover{background:var(--blue-d)}
+.btn-s{background:transparent;color:var(--muted);border:1px solid var(--border2);border-radius:7px;padding:6px 12px;font-size:12px;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn-s:hover{border-color:var(--blue);color:var(--blue)}
+
+/* HIGHLIGHTS CARD */
+.hl-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;max-width:620px;font-size:12px}
+.hl-hdr{background:linear-gradient(135deg,#1A0A30,#2D1855);padding:14px 18px;border-bottom:1px solid var(--border)}
+.hl-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:rgba(240,192,64,.6);margin-bottom:4px}
+.hl-title{font-size:14px;font-weight:700;color:#fff;margin-bottom:2px}
+.hl-sub{font-size:10px;color:rgba(255,255,255,.5)}
+.hl-tabs{display:flex;border-bottom:1px solid var(--border);overflow-x:auto}
+.hl-tab{padding:8px 14px;font-size:11px;color:var(--muted);border-bottom:2px solid transparent;cursor:pointer;white-space:nowrap;transition:all .12s}
+.hl-tab.on{color:var(--gold);border-bottom-color:var(--gold);font-weight:600}
+.hl-body{padding:14px 18px;max-height:320px;overflow-y:auto}
+.hl-moment{margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.hl-moment:last-child{border:none;margin:0;padding:0}
+.hl-moment-title{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px;display:flex;align-items:center;gap:6px}
+.hl-moment-date{font-size:10px;color:var(--gold);font-weight:600}
+.hl-moment-desc{font-size:11px;color:var(--muted);line-height:1.6}
+.hl-partner{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;padding:8px 10px;background:var(--surface2);border-radius:6px}
+.hl-partner-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.hl-partner-theme{font-size:10px;color:var(--blue);margin-bottom:2px;font-style:italic}
+.hl-partner-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.hl-market{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px}
+.hl-market-flag{font-size:18px;flex-shrink:0}
+.hl-market-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:2px}
+.hl-market-desc{font-size:11px;color:var(--muted);line-height:1.5}
+.hl-actions{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:8px;background:var(--surface2)}
+.hl-stat{background:var(--blue-l);border:1px solid rgba(61,123,204,.25);border-radius:8px;padding:8px 12px;text-align:center;flex:1}
+.hl-stat-val{font-size:18px;font-weight:700;color:var(--blue)}
+.hl-stat-lbl{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.4px}
+.stat-row-hl{display:flex;gap:8px;margin-bottom:14px}
+
+/* TIMELINE CARD */
+.tl-card{background:var(--surface);border:1px solid var(--border2);border-radius:12px;overflow:hidden;max-width:540px}
+.tl-hdr{background:linear-gradient(135deg,#0D2038,#162E52);padding:14px 18px;border-bottom:1px solid var(--border)}
+.tl-body{padding:14px 18px}
+.tl-phase{position:relative;padding-left:24px;margin-bottom:14px}
+.tl-phase:last-child{margin:0}
+.tl-phase::before{content:'';position:absolute;left:8px;top:0;bottom:-14px;width:1px;background:var(--border2)}
+.tl-phase:last-child::before{display:none}
+.tl-phase-dot{position:absolute;left:0;top:4px;width:16px;height:16px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-weight:700}
+.tl-phase-date{font-size:10px;color:var(--blue);font-weight:600;margin-bottom:2px}
+.tl-phase-name{font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.tl-phase-beats{font-size:11px;color:var(--muted);line-height:1.6}
+
+/* MINI TABLE */
+.mini-wrap{border:1px solid var(--border2);border-radius:10px;overflow:hidden;max-width:600px;font-size:12px}
+.mini-tbl{width:100%;border-collapse:collapse}
+.mini-tbl th{background:var(--blue);color:#fff;padding:7px 9px;text-align:left;font-size:10px;font-weight:600}
+.mini-tbl td{padding:6px 9px;border-bottom:1px solid var(--border)}
+.mini-tbl tr:last-child td{border:none}
+.mini-tbl tr:nth-child(even) td{background:var(--surface2)}
+
+/* BOTTOM INPUT */
+.chat-input-bar{border-top:1px solid var(--border);padding:14px 16px;background:var(--surface);flex-shrink:0;display:flex;justify-content:center}
+.chat-input-inner{width:100%;max-width:720px}
+.chat-input-wrap{background:var(--surface2);border:1.5px solid var(--border2);border-radius:14px;display:flex;align-items:flex-end;padding:10px 12px;gap:9px;transition:border-color .2s,box-shadow .2s}
+.chat-input-wrap:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(61,123,204,.15)}
+#chat-input{flex:1;border:none;outline:none;font-size:14px;font-family:inherit;color:var(--text);background:transparent;resize:none;max-height:110px;line-height:1.5;padding:2px 0}
+#chat-input::placeholder{color:var(--subtle)}
+#chat-input:disabled{opacity:.5;cursor:not-allowed}
+#send-btn{width:32px;height:32px;border-radius:8px;background:var(--blue);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
+#send-btn:hover{background:var(--blue-d)}
+#send-btn:disabled{opacity:.4;cursor:not-allowed}
+#send-btn svg{fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.chat-hint{text-align:center;font-size:10px;color:var(--subtle);margin-top:6px}
+
+/* LIBRARY PANEL */
+.lib-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;display:none}
+.lib-overlay.open{display:block}
+.lib-panel{position:fixed;top:0;right:0;bottom:0;width:500px;background:var(--surface);z-index:301;display:flex;flex-direction:column;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);border-left:1px solid var(--border)}
+.lib-panel.open{transform:translateX(0)}
+.lib-hdr{background:var(--surface2);border-bottom:1px solid var(--border);padding:14px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+.lib-title{font-size:14px;font-weight:600;flex:1}
+.lib-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1}
+.lib-close:hover{color:var(--text)}
+.lib-body{flex:1;overflow-y:auto;padding:16px}
+.brief-item{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;cursor:pointer;transition:border-color .12s}
+.brief-item:hover{border-color:var(--blue)}
+.bi-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--blue);margin-bottom:4px}
+.bi-title{font-size:14px;font-weight:600;color:var(--text);margin-bottom:3px}
+.bi-meta{font-size:11px;color:var(--muted);margin-bottom:8px}
+.bi-tags{display:flex;gap:6px;flex-wrap:wrap}
+.bi-tag{background:var(--blue-l);color:var(--blue);font-size:10px;font-weight:500;padding:2px 8px;border-radius:4px}
+.bi-tag.wip{background:rgba(240,192,64,.12);color:var(--gold)}
+
+/* scrollbars */
+.messages::-webkit-scrollbar,.lib-body::-webkit-scrollbar,.hl-body::-webkit-scrollbar{width:3px}
+.messages::-webkit-scrollbar-thumb,.lib-body::-webkit-scrollbar-thumb,.hl-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ══ WELCOME ══════════════════════════════════════════════ -->
+<div id="welcome">
+  <div class="w-logo">
+    <span class="w-badge">ST</span>
+    <span class="w-name">Strategy &nbsp;·&nbsp; Disney Marketing Platform</span>
+  </div>
+  <div class="w-greeting">Good morning, Michael.</div>
+  <div class="w-sub">What are we strategizing today?</div>
+  <div class="w-input-wrap">
+    <textarea id="w-input" rows="1" placeholder="Ask about a campaign, build a brief, or pull highlights…"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();startChat(this.value)}"
+      oninput="autoW(this)"></textarea>
+    <button class="w-send" onclick="startChat(document.getElementById('w-input').value)">
+      <svg width="15" height="15" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+  <div class="w-pills">
+    <button class="w-pill" onclick="startChat('Build a strategy brief')">📋 Build a brief</button>
+    <button class="w-pill" onclick="openLib()">📚 Browse briefs</button>
+    <button class="w-pill" onclick="startChat('Show campaign highlights')">📊 Campaign highlights</button>
+    <button class="w-pill" onclick="startChat('Plan a campaign timeline')">📅 Timeline planning</button>
+    <button class="w-pill" onclick="startChat('What are the Mandalorian and Grogu campaign pillars')">🎯 Mandalorian pillars</button>
+  </div>
+  <div class="w-footer">
+    <div class="w-active"><div class="w-dot"></div>Star Wars: The Mandalorian and Grogu · Campaign Complete</div>
+    <span style="color:var(--border2)">·</span>
+    <span class="w-footer-link" onclick="openLib()">Brief library</span>
+  </div>
+</div>
+
+<!-- ══ CHAT ══════════════════════════════════════════════════ -->
+<div id="chat">
+  <div class="chat-bar">
+    <a class="cb-logo" onclick="goHome()" href="#">
+      <span class="cb-badge">ST</span>
+      <span class="cb-name">Strategy</span>
+    </a>
+    <div class="cb-right">
+      <button class="cb-btn" onclick="openLib()">📚 Briefs <span class="cb-count">2</span></button>
+      <button class="cb-btn" onclick="newConv()">+ New</button>
+    </div>
+  </div>
+  <div class="messages" id="messages"></div>
+  <div class="chat-input-bar">
+    <div class="chat-input-inner">
+      <div class="chat-input-wrap">
+        <textarea id="chat-input" rows="1" placeholder="Message Strategy…"
+          onkeydown="handleKey(event)" oninput="autosize(this)"></textarea>
+        <button id="send-btn" onclick="sendMsg()">
+          <svg width="15" height="15" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+      <div class="chat-hint">Strategy · Disney Marketing Platform · Walt Disney Studios Motion Pictures</div>
+    </div>
+  </div>
+</div>
+
+<!-- BRIEF LIBRARY -->
+<div class="lib-overlay" id="lib-overlay" onclick="closeLib()"></div>
+<div class="lib-panel" id="lib-panel">
+  <div class="lib-hdr">
+    <span style="font-size:16px">📚</span>
+    <span class="lib-title">Strategy Brief Library</span>
+    <button class="lib-close" onclick="closeLib()">&#x2715;</button>
+  </div>
+  <div class="lib-body">
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:10px">Completed campaigns</div>
+    <div class="brief-item" onclick="closeLib();startChat('Show Mandalorian campaign highlights')">
+      <div class="bi-label">Campaign Complete · Disney / Lucasfilm</div>
+      <div class="bi-title">Star Wars: The Mandalorian and Grogu</div>
+      <div class="bi-meta">May 22, 2026 · Theatrical · Domestic + Global</div>
+      <div class="bi-tags">
+        <span class="bi-tag">Positioning</span><span class="bi-tag">4 Pillars</span><span class="bi-tag">15+ Partners</span><span class="bi-tag">11 Markets</span><span class="bi-tag">Full highlights</span>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 10px">In progress</div>
+    <div class="brief-item" onclick="closeLib();startChat('Show Vision Quest strategy brief')">
+      <div class="bi-label">WIP Brief · Disney+ / Marvel Studios</div>
+      <div class="bi-title">Vision Quest</div>
+      <div class="bi-meta">Oct 7 – Nov 18, 2026 · Disney+ (8 episodes) · Showrunner: Terry Matalas</div>
+      <div class="bi-tags">
+        <span class="bi-tag">Positioning</span><span class="bi-tag">4 Pillars</span><span class="bi-tag wip">WIP</span>
+      </div>
+    </div>
+    <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin:14px 0 10px">On slate · no brief yet</div>
+    <div class="brief-item" style="opacity:.5">
+      <div class="bi-label">Upcoming · Disney · December 18, 2026</div>
+      <div class="bi-title">Avengers: Doomsday</div>
+      <div class="bi-meta">Theatrical · Marvel Studios · Brief not yet started</div>
+      <div class="bi-tags"><span class="bi-tag">Theatrical</span><span class="bi-tag">Marvel</span></div>
+    </div>
+    <div class="brief-item" style="opacity:.5">
+      <div class="bi-label">Upcoming · Disney · November 25, 2026</div>
+      <div class="bi-title">Disney's Hexed</div>
+      <div class="bi-meta">Theatrical · Walt Disney Animation</div>
+      <div class="bi-tags"><span class="bi-tag">Animation</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── HIGHLIGHTS DATA (from Mandalorian Campaign) ─────────────────
+const MANDO_HIGHLIGHTS = {
+  overview: {
+    positioning: 'Star Wars: The Mandalorian and Grogu launches into theaters worldwide for the first time with their biggest adventure yet. Bound by their unbreakable bond, this iconic duo journeys to new planets, encountering new allies, and facing formidable threats along the way. An epic adventure filled with action, adventure, and unbridled fun — made for the big screen.',
+    pillars: [
+      {name:'THIS IS THE WAY TO THE THEATER', desc:'Position as the immersive theatrical must-see tentpole of summer.'},
+      {name:'ICONIC TEAM UP', desc:'Lead with Grogu\'s lovable personality, capturing the cultural zeitgeist and solidifying the duo as global icons.'},
+      {name:'BRAND NEW ADVENTURE', desc:'Standalone storyline — approachable to fans and newcomers alike, no Star Wars background required.'},
+      {name:'MANDOVERSE TAKEOVER', desc:'Unprecedented multichannel campaign activating all Company levers and key partners to maximize global exposure.'},
+    ],
+    stats: [{val:'15+',lbl:'Brand partners'},{val:'11',lbl:'International markets'},{val:'4',lbl:'Campaign pillars'},{val:'6',lbl:'Live sports integrations'}]
+  },
+  moments: [
+    {date:'Mar 15, 2026', title:'Academy Awards', desc:'Pedro Pascal and Sigourney Weaver presented with Grogu in the audience for Best Visual Effects and Production Design.'},
+    {date:'Apr 16, 2026', title:'CinemaCon — Las Vegas', desc:'Final trailer debuted to CinemaCon attendees alongside the first 17 minutes of the film, igniting theatrical momentum and triggering a full-scale Tickets on Sale takeover the following day.'},
+    {date:'Apr 18, 2026', title:'WWE WrestleMania', desc:'Mando and Grogu surprised Las Vegas fans at WrestleMania. Custom 60-second Exclusive Look plus in-ring signage and premium in-match graphics. Coverage across WWE, ESPN SportsCenter, Star Wars and Lucasfilm handles.'},
+    {date:'Apr 25-26, 2026', title:'CCXP Mexico City', desc:'Pedro Pascal and Jon Favreau appeared at Centro Banamex with a special preview for 2,000+ fans, following an exclusive franchise sizzle and synchronized light show.'},
+    {date:'May 4, 2026', title:'May the 4th IMAX Footage Event', desc:'Exclusive IMAX events featuring 25+ minutes of never-before-seen footage. Dave Filoni and the Mandalorian in LA/NY; Pedro Pascal, Sigourney Weaver, and Jon Favreau in Berlin and Madrid.'},
+    {date:'May 4, 2026', title:'OOH Domination — LA & NY', desc:'Animatronic Grogu at The Grove, Times Square floating Popcorn spectacle ("Big Kahuna" roadblock), Sunset Wall, Hollywood Towers, JFK Tunnel, and subway liveboards. Premium, high-frequency visibility driving theatrical urgency.'},
+    {date:'May 16, 2026', title:'Disneyland Takeover', desc:'Pedro Pascal revealed himself as the walkaround Mandalorian character. Jon Favreau, Pedro, and Sigourney Weaver debuted "The Curious Child" nighttime projection. New Millennium Falcon: Smugglers Run storyline launched May 22.'},
+    {date:'May 17-23, 2026', title:'NBA Eastern Conference Finals', desc:'Mando and Grogu appeared courtside with Chris Paul. Custom content across Games 1 and 2 on ESPN/ABC — Pedro Pascal-led Game 1 open and "Golden Ticket" fan upgrade moment with Omar Raja.'},
+    {date:'May 19, 2026', title:'Fortnite Watch Party Island', desc:'Mando and Grogu Watch Party Island brought Nevarro to life, giving fans a first look at the film\'s opening 10 minutes inside the Fortnite universe.'},
+  ],
+  partners: [
+    {name:'Burger King', theme:'Have It The Way / This Is Your Way', desc:'First Star Wars partnership in 20 years — biggest global program ever. Custom spot, LTO menu (BBQ Bounty Whopper, Blue Cookie Shake, Garlic Chicken Fries), collectible cups, King Jr Meal with 8 toys. Full-scale in-store takeover across US, Canada, Brazil, Mexico, France, Spain, Germany, UK and more.'},
+    {name:'Walmart', theme:'The Adventure In Store', desc:'Two custom TV spots, retail statements, and an exclusive Grogu popcorn bucket with movie ticket. Galaxy brought to retail across all Walmart locations.'},
+    {name:'Coca-Cola', theme:'Refresh Your Galaxy', desc:'Co-branded concession packaging at AMC and Cinemark. Two themed drinks: Mandalorian Beskar Brew and Grogu Galactic Green Lemonade. Thermal detonator-style bottles at the Premiere.'},
+    {name:'Bath & Body Works', theme:'A Fragrance Adventure', desc:'Two new scents: Force Flow and Bounty Hunter. Third scent Ice Planet exclusive to loyalty members. International rollout to 40+ markets. Round fixture displays and front-of-store pedestals.'},
+    {name:'Alaska Airlines', theme:'Celebrate the Journey', desc:'Galaxy\'s Edge aircraft featuring film-themed decal. Gate activation May 20 with DJ, photo ops, character appearances. Co-branded IFE spot, sweepstakes to DLR, and social amplification.'},
+    {name:'Casio G-Shock', theme:'Forged in Time', desc:'Mandalorian Beskar G-Steel and "Grogu green" Baby-G timepieces. Each includes collectible Bounty Hunter ID Card Watch Stand. 6,400+ retail doors across US, UK, Germany, France, Italy, Spain.'},
+    {name:'Miniso', theme:'A Force of Fun', desc:'Custom spot with Stormtroopers. Global pop-ups at 9 locations across US, Canada, Peru, Venezuela, India, Indonesia. Vinyl plushes, blind boxes, and lifestyle collection.'},
+    {name:'Olive & June', theme:'Your Quest for Better Nails Is Complete', desc:'25 custom SKUs: new colors, press-ons for adults and kids, nail art stickers. 1,800+ retail locations including CVS and Walmart POP displays. 500-1,000 PR mailers to influencers.'},
+    {name:'RSVLTS', theme:'Forge Your Style', desc:'New Mandalorian & Grogu apparel collection. Paid streaming and social assets.'},
+    {name:'Archer Meat Snacks', theme:'Fuel Your Adventure', desc:'360 campaign: retail, digital, social, OOH (LA/NY), and $10 Fandango reward. Custom spot across streaming, linear, digital and social.'},
+  ],
+  international: [
+    {flag:'🇬🇧', name:'United Kingdom', desc:'AVOD/SVOD, phased TV and radio, OOH Alpha Banner on London M4, bus panels, mall takeovers, DOOH, exhibitor foyer takeovers. ESPN/Nat Geo crossover activation.'},
+    {flag:'🇫🇷', name:'France', desc:'BVOD, YouTube/Meta/TikTok, nationwide DOOH (train stations, metro, façade dominations), landmark inflatable installation, wide cinema network trailering. DCP Star Wars pop-up retail experience.'},
+    {flag:'🇩🇪', name:'Germany', desc:'Frontloaded paid video, premium video inventory, linear TV sports/events, large-format DOOH in transit hubs, national OOH campaign, cinema placements with ticket incentives.'},
+    {flag:'🇪🇸', name:'Spain', desc:'Nationwide TV anchored in sports/entertainment, large-scale building wrap OOH, highway billboards, subway takeovers, continuous in-cinema trailering from April.'},
+    {flag:'🇧🇷', name:'Brazil', desc:'Cinema network placements, open TV advertising, street signs/billboards, subway takeovers, Rio and São Paulo large-format, Star Wars Day IMAX screening. ESPN channel placements.'},
+    {flag:'🇲🇽', name:'Mexico', desc:'Culturally relevant DOOH in Mexico City/Guadalajara/Monterrey, Children\'s Day tie-in, Radio Disney integration, professional baseball team stadium takeover with branded content.'},
+    {flag:'🇯🇵', name:'Japan', desc:'Galaxy-themed exhibition/store/café at Shibuya Tsutaya, floating holovision + giant Grogu at Yokohama Minato Mirai, Yurakucho Mullion takeover (original Star Wars premiere venue 1978), Shibuya Crossing and Shinjuku 3D OOH. Local craftsmen collaborations: lacquerware helmet, pottery, wagasa umbrellas.'},
+    {flag:'🇰🇷', name:'Korea', desc:'Korean Baseball Organization TV integration, transit/subway OOH, major LED takeovers, Star Wars Celebration Event at Jamsil Han River Park with giant Grogu inflatable and drone show. Hyundai Steel partnership.'},
+    {flag:'🇦🇺', name:'Australia', desc:'AFL and prime-time TV, radio, digital across YouTube/BVOD/Twitch/gaming, special builds, stadium signage, IMAX midnight previews. Trans-cultural activations.'},
+    {flag:'🇨🇳', name:'China', desc:'Bespoke payoff poster, large-scale mall activations, premium LED displays, landmark stunts, VW custom Tiguan and ID ERA 9X vehicles, short-form video/social commerce integrations.'},
+  ],
+  synergy: [
+    {title:'New Nighttime Show — "The Curious Child"', desc:'Disneyland Resort. Grogu uses force abilities and revisits adventures with The Mandalorian. Debuted May 16 alongside cast appearance.'},
+    {title:'Millennium Falcon: Smugglers Run — New Overlay', desc:'Walt Disney World & Disneyland Resort. Mando and Grogu mission to secure a bounty. Launched May 22 with film release. Jon Favreau, Pedro Pascal and cast surprised first guests.'},
+    {title:'Character Meet & Greets', desc:'Mandalorian and Grogu walkaround characters at Galaxy\'s Edge at WDW, Disneyland, and for the first time Disneyland Paris, alongside BDX Droid companions.'},
+    {title:'F&B Innovation', desc:'BDX Droid Popcorn Bucket, Mandalorian and Grogu Jetpack Sipper, Mando and Grogu Stainless Steel Tumbler, plus themed food offerings within Galaxy\'s Edge (both Disneyland and WDW).'},
+    {title:'Resort-Wide Presence', desc:'Signage across Disneyland Resort and Walt Disney World Resort. Themed PhotoPass photo ops throughout Galaxy\'s Edge. D23 Members premiere event at Disney Springs AMC.'},
+  ]
+};
+
+const VISION_QUEST = {
+  title: "Vision Quest",
+  studio: "Disney+ / Marvel Studios",
+  showrunner: "Terry Matalas",
+  director: "Christopher Byrne",
+  cast: "Paul Bettany (Vision) · James Spader (Ultron)",
+  dates: "Oct 7 – Nov 18, 2026 · 8 episodes · 7 weeks",
+  positioning: '"A deeply human story told through artificial eyes." From the algorithm that brought you WandaVision and Agatha All Along, Vision Quest is the final act of the trilogy: a surreal, emotional journey through memory, mind, and reality.',
+  pillars: [
+    {name:'FROM WANDA TO AGATHA TO VISION', desc:'Position as the trilogy\'s final act and emotional climax. Nostalgia-driven recap campaign: "From Wanda to Agatha to Now."'},
+    {name:'WHAT MAKES A HUMAN?', desc:'Vision\'s search for purpose. #WhatMakesUsHuman social campaign. Stark AIs with "ChatGPT personality" activations. Play into the current AI cultural conversation.'},
+    {name:'LIKE FATHER, LIKE SON', desc:'Vision and Tommy, Vision and Ultron. Interactive AR filter: "Meet Your Digital Legacy" — users see themselves as Stark-tech hybrids.'},
+    {name:'TECH VS. NOSTALGIA', desc:'Stark Industries\' digital inheritance vs. Vision\'s longing for humanity. Glitch motifs, VHS-style memory sequences, retro pub imagery. Behind-the-scenes featurette: "Inside Vision\'s Mindscape."'},
+  ],
+  taglines: ['"The last chapter begins inside the mind."', '"From Wanda to Agatha to Now."', '"Before the past rewrites the future."'],
+  keyDates: ['Upfronts — May (TBD/Confidential)','SDCC — TBC','D23 — August 2026','Early Fall Marketing Launch','Oct 7, 2026 — Series premiere (2-ep)','Nov 18, 2026 — Series finale'],
+  status: 'WIP'
+};
+
+// ── PAGE STATE ─────────────────────────────────────────────
+let inChat=false;
+function startChat(text){if(!text.trim())return;enterChat();document.getElementById('w-input').value='';setTimeout(()=>{userMsg(text);setE(false);showTyping();setTimeout(()=>{hideTyping();setE(true);respond(text);},600);},320);}
+function enterChat(){if(inChat)return;inChat=true;document.getElementById('welcome').classList.add('out');document.getElementById('chat').classList.add('in');setTimeout(()=>document.getElementById('chat-input').focus(),400);}
+function goHome(){inChat=false;state='idle';flowIndex=0;ctx={};document.getElementById('messages').innerHTML='';document.getElementById('welcome').classList.remove('out');document.getElementById('chat').classList.remove('in');document.getElementById('w-input').value='';setTimeout(()=>document.getElementById('w-input').focus(),400);}
+function newConv(){document.getElementById('messages').innerHTML='';state='idle';flowIndex=0;ctx={};}
+function openLib(){document.getElementById('lib-overlay').classList.add('open');document.getElementById('lib-panel').classList.add('open');}
+function closeLib(){document.getElementById('lib-overlay').classList.remove('open');document.getElementById('lib-panel').classList.remove('open');}
+
+// ── CHAT ENGINE ─────────────────────────────────────────────
+let state='idle',ctx={},flowIndex=0;
+const FLOWS={
+  brief:[
+    {key:'title',ask:()=>"Which title are we building a brief for?",chips:["Star Wars: The Mandalorian and Grogu","Avengers: Doomsday","Vision Quest","Disney's Hexed","Other"]},
+    {key:'platform',ask:()=>`<strong>${ctx.title}</strong> — theatrical or streaming?`,chips:["Theatrical","Disney+","Both / Event Series"]},
+    {key:'phase',ask:()=>"Campaign phase?",chips:["Full campaign from scratch","Teaser only","Campaign launch","Awards / FYC","Global rollout"]},
+    {key:'positioning',ask:()=>"What's your core positioning line — the one sentence that captures what this campaign is about? (Draft is fine)",chips:[]},
+    {key:'pillars',ask:()=>"Give me 2-4 marketing pillars — the strategic territories this campaign will own.",chips:[]},
+    {key:'audience',ask:()=>"Primary audience? Who are we most trying to reach?",chips:["Core franchise fans 18-34","Family audiences","Lapsed fans","General moviegoing audiences","Multi-demographic — all of the above"]},
+    {key:'tone',ask:()=>"Campaign tone direction?",chips:["Epic / monumental","Emotional / nostalgic","Unsettling / psychological","Fun / cultural moment","Surreal / character-driven"]},
+    {key:'confirm',isConfirm:true,outputType:'brief'}
+  ],
+  timeline:[
+    {key:'title',ask:()=>"Which title are we building a timeline for?",chips:["Star Wars: The Mandalorian and Grogu","Avengers: Doomsday","Vision Quest","Other"]},
+    {key:'release',ask:()=>`<strong>${ctx.title}</strong> — what's the release/premiere date?`,chips:[]},
+    {key:'type',ask:()=>"Theatrical or streaming?",chips:["Theatrical","Disney+ series premiere","Theatrical + streaming window"]},
+    {key:'confirm',isConfirm:true,outputType:'timeline'}
+  ]
+};
+
+function detectIntent(q){
+  const lq=q.toLowerCase();
+  if(/mandalorian|mando|grogu|star wars.*high|highlight|campaign recap|what happened|campaign results/.test(lq))return'_mando_highlights';
+  if(/vision quest|tin man|wandavision|paul bettany|ultron/.test(lq))return'_vision_quest';
+  if(/pillar|positioning|strategy.*mandalorian|mandalorian.*strat|mandalorian.*pillars/.test(lq))return'_mando_strategy';
+  if(/brief|build.*brief|create.*brief|strategy brief/.test(lq))return'brief';
+  if(/highlight|recap|campaign results|what.*worked|campaign summary/.test(lq))return'_mando_highlights';
+  if(/timeline|road to release|campaign plan|schedule|key dates/.test(lq))return'timeline';
+  if(/partner|promotion|brand partner|burger king|coca.cola|walmart/.test(lq))return'_partners';
+  if(/international|global|market|territory/.test(lq))return'_intl';
+  if(/synergy|parks|disneyland|disney world/.test(lq))return'_synergy';
+  return null;
+}
+
+function respond(input){
+  const q=input.toLowerCase().trim();
+  if(/^(home|start over|restart|reset)$/.test(q)){goHome();return;}
+  if(state==='idle'||state==='done'){
+    const i=detectIntent(input);
+    if(!i){botMsg("I can help build strategy briefs, surface campaign highlights, map timelines, or pull data on specific executions. What do you need?",["Build a brief","Mandalorian campaign highlights","Vision Quest brief","Timeline planning"]);return;}
+    if(i.startsWith('_')){handleQuery(i);return;}
+    startFlow(i);return;
+  }
+  advanceFlow(input);
+}
+
+function handleQuery(intent){
+  if(intent==='_mando_highlights'){showMandoHighlights();}
+  else if(intent==='_vision_quest'){showVisionQuestBrief();}
+  else if(intent==='_mando_strategy'){showMandoStrategy();}
+  else if(intent==='_partners'){showPartners();}
+  else if(intent==='_intl'){showIntl();}
+  else if(intent==='_synergy'){showSynergy();}
+}
+
+function startFlow(i){state=i+'.0';flowIndex=0;ctx={};const s=getStep();if(s){const c=typeof s.chips==='function'?s.chips():s.chips;botMsg(s.ask(),c||[]);}}
+function getStep(){const f=state.split('.')[0];return(FLOWS[f]||[])[flowIndex]||null;}
+function advanceFlow(input){
+  const f=state.split('.')[0];const steps=FLOWS[f];if(!steps)return;
+  const step=steps[flowIndex];if(!step)return;
+  ctx[step.key]=input;flowIndex++;
+  const next=steps[flowIndex];
+  if(!next||next.isConfirm){generateOutput(next?.outputType||f);return;}
+  const ask=next.ask();const chips=typeof next.chips==='function'?next.chips():next.chips;
+  setTimeout(()=>botMsg(ask,chips||[]),550);
+}
+
+function generateOutput(type){
+  setTimeout(()=>{
+    if(type==='brief')showGeneratedBrief();
+    else if(type==='timeline')showTimeline();
+  },800);
+}
+
+// ── HIGHLIGHTS VIEWS ────────────────────────────────────────
+
+function showMandoHighlights(){
+  botMsg('Here\'s the full campaign overview for <strong>Star Wars: The Mandalorian and Grogu</strong>:');
+  const card = buildHighlightsCard('overview');
+  addCard(card);
+  setTimeout(()=>addChips(["Show cultural moments","Show brand partnerships","Show international markets","Show Parks & synergy"]),600);
+}
+
+function showMandoStrategy(){
+  botMsg('Here\'s the <strong>Mandalorian and Grogu</strong> marketing strategy:');
+  const el=document.createElement('div');el.className='brief-card';
+  const phtml=MANDO_HIGHLIGHTS.overview.pillars.map(p=>`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px">${p.name}</div><div style="font-size:11px;color:var(--muted);line-height:1.5">${p.desc}</div></div>`).join('');
+  el.innerHTML=`<div class="bc-hdr"><div class="bc-label">Marketing Strategy · Disney / Lucasfilm</div><div class="bc-title">Star Wars: The Mandalorian and Grogu</div><div class="bc-meta">May 22, 2026 · Global Theatrical</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Positioning</div><div class="bc-text">${MANDO_HIGHLIGHTS.overview.positioning}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Marketing Pillars</div>${phtml}</div>
+  <div class="bc-actions"><button class="btn-p" onclick="startChat('Show campaign highlights')">Full campaign highlights</button><button class="btn-s" onclick="startChat('Show brand partnerships')">Partnerships</button></div>`;
+  addCard(el);
+}
+
+function showPartners(){
+  botMsg(`<strong>${MANDO_HIGHLIGHTS.partners.length} promotional partners</strong> for Mandalorian and Grogu:`);
+  const el=document.createElement('div');el.className='hl-card';
+  const phtml=MANDO_HIGHLIGHTS.partners.map(p=>`<div class="hl-partner"><div style="flex:1"><div class="hl-partner-name">${p.name}</div><div class="hl-partner-theme">${p.theme}</div><div class="hl-partner-desc">${p.desc}</div></div></div>`).join('');
+  el.innerHTML=`<div class="hl-hdr"><div class="hl-label">Promotional Partnerships · 15+ Brands</div><div class="hl-title">Star Wars: The Mandalorian and Grogu</div><div class="hl-sub">Category leaders across F&B, Retail, Beauty, Auto, Travel, Fitness & more</div></div>
+  <div class="hl-body">${phtml}</div>
+  <div class="hl-actions"><button class="btn-p" onclick="startChat('Show campaign highlights')">Full campaign view</button></div>`;
+  addCard(el);
+}
+
+function showIntl(){
+  botMsg('<strong>International campaign</strong> — 10 markets activated for Mandalorian and Grogu:');
+  const el=document.createElement('div');el.className='hl-card';
+  const mhtml=MANDO_HIGHLIGHTS.international.map(m=>`<div class="hl-market"><div class="hl-market-flag">${m.flag}</div><div><div class="hl-market-name">${m.name}</div><div class="hl-market-desc">${m.desc}</div></div></div>`).join('');
+  el.innerHTML=`<div class="hl-hdr"><div class="hl-label">International Markets · 10 Territories</div><div class="hl-title">Star Wars: The Mandalorian and Grogu</div><div class="hl-sub">Media · OOH · In-Theater · Digital · Synergy — per market</div></div>
+  <div class="hl-body">${mhtml}</div>`;
+  addCard(el);
+}
+
+function showSynergy(){
+  botMsg('<strong>Parks & synergy</strong> — Mandalorian and Grogu across Disney properties:');
+  const el=document.createElement('div');el.className='hl-card';
+  const shtml=MANDO_HIGHLIGHTS.synergy.map(s=>`<div class="hl-moment"><div class="hl-moment-title">${s.title}</div><div class="hl-moment-desc">${s.desc}</div></div>`).join('');
+  el.innerHTML=`<div class="hl-hdr"><div class="hl-label">Parks & Synergy</div><div class="hl-title">Star Wars: The Mandalorian and Grogu</div><div class="hl-sub">Disneyland Resort · Walt Disney World Resort · Disneyland Paris</div></div>
+  <div class="hl-body">${shtml}</div>`;
+  addCard(el);
+}
+
+function buildHighlightsCard(section){
+  const d=MANDO_HIGHLIGHTS;
+  const el=document.createElement('div');el.className='hl-card';
+  let tabs='';
+  const tabDefs=[
+    {id:'overview',label:'Overview'},
+    {id:'moments',label:'Key Moments'},
+    {id:'partners',label:'Partnerships'},
+    {id:'intl',label:'International'},
+    {id:'synergy',label:'Parks'},
+  ];
+  tabs=tabDefs.map((t,i)=>`<div class="hl-tab${i===0?' on':''}" onclick="switchHlTab('${t.id}',this,event)">${t.label}</div>`).join('');
+
+  const statsHtml=d.overview.stats.map(s=>`<div class="hl-stat"><div class="hl-stat-val">${s.val}</div><div class="hl-stat-lbl">${s.lbl}</div></div>`).join('');
+  const pillarsHtml=d.overview.pillars.map(p=>`<div style="margin-bottom:8px"><span style="font-size:10px;font-weight:700;color:var(--blue)">${p.name}</span><div style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px">${p.desc}</div></div>`).join('');
+
+  const momentsHtml=d.moments.map(m=>`<div class="hl-moment"><div class="hl-moment-title"><span class="hl-moment-date">${m.date}</span> &nbsp;${m.title}</div><div class="hl-moment-desc">${m.desc}</div></div>`).join('');
+  const partnersHtml=d.partners.map(p=>`<div class="hl-partner"><div><div class="hl-partner-name">${p.name}</div><div class="hl-partner-theme">${p.theme}</div><div class="hl-partner-desc">${p.desc}</div></div></div>`).join('');
+  const intlHtml=d.international.map(m=>`<div class="hl-market"><div class="hl-market-flag">${m.flag}</div><div><div class="hl-market-name">${m.name}</div><div class="hl-market-desc">${m.desc}</div></div></div>`).join('');
+  const synHtml=d.synergy.map(s=>`<div class="hl-moment"><div class="hl-moment-title">${s.title}</div><div class="hl-moment-desc">${s.desc}</div></div>`).join('');
+
+  el.innerHTML=`<div class="hl-hdr"><div class="hl-label">Campaign Complete · Disney / Lucasfilm</div><div class="hl-title">Star Wars: The Mandalorian and Grogu</div><div class="hl-sub">May 22, 2026 · Global Theatrical · Full campaign</div></div>
+  <div class="hl-tabs" id="hl-tabs-main">${tabs}</div>
+  <div class="hl-body" id="hl-body-main">
+    <div id="hl-overview">
+      <div class="stat-row-hl">${statsHtml}</div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Positioning</div>
+      <div style="font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:12px">${d.overview.positioning}</div>
+      <div style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);margin-bottom:8px">Campaign Pillars</div>
+      ${pillarsHtml}
+    </div>
+    <div id="hl-moments" style="display:none">${momentsHtml}</div>
+    <div id="hl-partners" style="display:none">${partnersHtml}</div>
+    <div id="hl-intl" style="display:none">${intlHtml}</div>
+    <div id="hl-synergy" style="display:none">${synHtml}</div>
+  </div>
+  <div class="hl-actions"><button class="btn-s" onclick="startChat('Build a strategy brief')">Build a brief</button><button class="btn-s" onclick="startChat('Plan a campaign timeline')">Plan timeline</button></div>`;
+  return el;
+}
+
+window.switchHlTab=function(id,el,e){
+  e?.stopPropagation();
+  const tabs=['overview','moments','partners','intl','synergy'];
+  tabs.forEach(t=>{const el2=document.getElementById('hl-'+t);if(el2)el2.style.display='none';});
+  const target=document.getElementById('hl-'+id);if(target)target.style.display='block';
+  if(el&&el.parentElement){el.parentElement.querySelectorAll('.hl-tab').forEach(t=>t.classList.remove('on'));el.classList.add('on');}
+};
+
+function showVisionQuestBrief(){
+  const vq=VISION_QUEST;
+  botMsg('Here\'s the <strong>Vision Quest</strong> strategy brief — WIP status:');
+  const el=document.createElement('div');el.className='brief-card';
+  const pillarsHtml=vq.pillars.map(p=>`<div style="margin-bottom:8px"><div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px">${p.name}</div><div style="font-size:11px;color:var(--muted);line-height:1.5">${p.desc}</div></div>`).join('');
+  const tagsHtml=vq.taglines.map(t=>`<div style="font-size:11px;color:var(--muted);padding:5px 8px;background:var(--surface2);border-radius:5px;margin-bottom:5px;font-style:italic">${t}</div>`).join('');
+  const datesHtml=vq.keyDates.map(d=>`<div class="bc-pill">${d}</div>`).join('');
+  el.innerHTML=`<div class="bc-hdr" style="background:linear-gradient(135deg,#1A0A30,#2D1855)"><div class="bc-label">WIP Strategy Brief · Disney+ · Marvel Studios</div><div class="bc-title">${vq.title}</div><div class="bc-meta">${vq.dates}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Cast & Team</div><div class="bc-text"><strong>Showrunner:</strong> ${vq.showrunner} &nbsp;·&nbsp; <strong>Director:</strong> ${vq.director}<br><strong>Cast:</strong> ${vq.cast}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Positioning</div><div class="bc-text">${vq.positioning}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Marketing Pillars</div>${pillarsHtml}</div>
+  <div class="bc-section"><div class="bc-sec-label">Tagline Options</div>${tagsHtml}</div>
+  <div class="bc-section"><div class="bc-sec-label">Key Dates</div><div>${datesHtml}</div></div>
+  <div class="bc-actions"><button class="btn-p" onclick="startChat('Build on the Vision Quest brief')">Build on this brief</button><button class="btn-s" onclick="startChat('Plan Vision Quest campaign timeline')">Plan timeline</button></div>`;
+  addCard(el);
+  setTimeout(()=>addChips(["Write a positioning line for Vision Quest","Generate tagline options","Build the campaign timeline"]),700);
+}
+
+function showGeneratedBrief(){
+  const title=ctx.title||'Untitled Title';
+  botMsg(`Strategy brief generated for <strong>${title}</strong>:`);
+  const el=document.createElement('div');el.className='brief-card';
+  const pillarsText=ctx.pillars||'Pillar 1 · Pillar 2 · Pillar 3';
+  const pillarItems=pillarsText.split(/[·,;\/\n]+/).filter(p=>p.trim()).map(p=>`<div style="margin-bottom:7px"><div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px;text-transform:uppercase">${p.trim().toUpperCase()}</div><div style="font-size:11px;color:var(--muted)">Strategic territory — expand with specific executions</div></div>`).join('');
+  el.innerHTML=`<div class="bc-hdr"><div class="bc-label">Strategy Brief · Draft · ${ctx.platform||'TBD'}</div><div class="bc-title">${title}</div><div class="bc-meta">${ctx.phase||'Full campaign'} · ${ctx.audience||'Core + general audiences'}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Positioning</div><div class="bc-text">${ctx.positioning||'[Positioning to be developed]'}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Marketing Pillars</div>${pillarItems}</div>
+  <div class="bc-section"><div class="bc-sec-label">Audience</div><div class="bc-text">${ctx.audience||'TBD'}</div></div>
+  <div class="bc-section"><div class="bc-sec-label">Campaign Tone</div><div class="bc-text">${ctx.tone||'TBD'}</div></div>
+  <div class="bc-actions"><button class="btn-p" onclick="saveToLib(this,'Brief saved to library.')">Save to library</button><button class="btn-s" onclick="startChat('Plan a campaign timeline')">Build timeline</button><button class="btn-s" onclick="startOver()">Start over</button></div>`;
+  addCard(el);state='done';
+}
+
+function showTimeline(){
+  const title=ctx.title||'Untitled';
+  const release=ctx.release||'TBD';
+  const isTV=ctx.type?.toLowerCase().includes('stream')||ctx.type?.toLowerCase().includes('disney');
+  botMsg(`Campaign timeline for <strong>${title}</strong>:`);
+  const el=document.createElement('div');el.className='tl-card';
+  const phases=isTV?[
+    {n:'1',date:'12-18 months out',name:'Franchise setup / teaser announce',beats:'Upfronts announcement · Trade press · Franchise recap content ("From WandaVision to Now")'},
+    {n:'2',date:'6-8 months out',name:'SDCC / D23 reveal',beats:'First look footage · Character reveals · Showrunner panel · Social launch'},
+    {n:'3',date:'3-4 months out',name:'Full trailer & campaign launch',beats:'Full trailer · Press embargo lift · Paid media activation · Platform marketing'},
+    {n:'4',date:'4-6 weeks out',name:'Countdown to premiere',beats:'Talent press tour · Long-lead features · Social amplification · Recap content'},
+    {n:'5',date:'Week 1',name:'Premiere & launch momentum',beats:'2-episode premiere · Live social · Press reviews · "Watch with" content'},
+    {n:'6',date:'Mid-run',name:'Sustained engagement',beats:'Episode recaps · Character features · Social hooks · Cliffhanger amplification'},
+  ]:[
+    {n:'1',date:'12+ months out',name:'Campaign kickoff / franchise event',beats:'Industry announcement · First talent appearance · Initial teaser'},
+    {n:'2',date:'8-10 months out',name:'Teaser & early momentum',beats:'Teaser trailer · Major event (Celebration, SDCC, D23) · Fan engagement'},
+    {n:'3',date:'4-6 months out',name:'Full trailer & ticket strategy',beats:'Full trailer (Super Bowl opportunity) · CinemaCon presentation · Exhibitor partnerships'},
+    {n:'4',date:'Tickets on sale',name:'Full campaign launch',beats:'Full-funnel paid media · Promotional partner launches · OOH domination'},
+    {n:'5',date:'6-3 weeks out',name:'Cultural moment amplification',beats:'Sports integrations · Live events · Creator program · International press tour'},
+    {n:'6',date:'Release week',name:'Gametime / opening weekend',beats:'Synchronized cross-platform takeover · World premiere · Opening night events'},
+  ];
+  const phasesHtml=phases.map(p=>`<div class="tl-phase"><div class="tl-phase-dot">${p.n}</div><div class="tl-phase-date">${p.date}</div><div class="tl-phase-name">${p.name}</div><div class="tl-phase-beats">${p.beats}</div></div>`).join('');
+  el.innerHTML=`<div class="tl-hdr"><div class="bc-label">${isTV?'Streaming Series':'Theatrical Release'} · Campaign Road Map</div><div class="bc-title">${title}</div><div class="bc-meta">Target: ${release} · ${ctx.type||'Theatrical'}</div></div>
+  <div class="tl-body">${phasesHtml}</div>
+  <div class="bc-actions"><button class="btn-p" onclick="saveToLib(this,'Timeline saved.')">Save timeline</button><button class="btn-s" onclick="startChat('Build a strategy brief')">Build a brief</button></div>`;
+  addCard(el);state='done';
+}
+
+function saveToLib(btn,msg){btn.textContent='✓ Saved';btn.style.background='var(--green)';btn.style.color='#000';btn.disabled=true;setTimeout(()=>botMsg(msg+' <button onclick="openLib()" style="background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;text-decoration:underline">View library →</button>',[]),400);}
+function startOver(){state='idle';flowIndex=0;ctx={};botMsg("Starting fresh — what are we strategizing?",["Build a brief","Campaign highlights","Timeline planning"]);}
+
+// ── RENDER ──────────────────────────────────────────────────
+function showTyping(){removeChips();const m=document.getElementById('messages');const o=document.createElement('div');o.className='typing-outer';const i=document.createElement('div');i.className='typing-inner';const r=document.createElement('div');r.className='typing-row';r.id='typing';r.innerHTML=`<div class="av bot">ST</div><div class="typing-bub"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;i.appendChild(r);o.appendChild(i);m.appendChild(o);scrollBot();}
+function hideTyping(){const e=document.getElementById('typing');if(e&&e.parentElement&&e.parentElement.parentElement)e.parentElement.parentElement.remove();}
+function removeChips(){document.querySelectorAll('.chip-outer').forEach(e=>e.remove());}
+function botMsg(html,chips){
+  if(html===null)return;hideTyping();const m=document.getElementById('messages');
+  const o=document.createElement('div');o.className='msg-outer';const i=document.createElement('div');i.className='msg-inner';
+  const r=document.createElement('div');r.className='msg-row';r.innerHTML=`<div class="av bot">ST</div><div class="bubble bot">${html}</div>`;i.appendChild(r);
+  if(chips&&chips.length){const co=document.createElement('div');co.className='chip-outer';const ci=document.createElement('div');ci.className='chip-inner';const cr=document.createElement('div');cr.className='chip-row';chips.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=()=>chipSend(c);cr.appendChild(b);});ci.appendChild(cr);co.appendChild(ci);i.appendChild(co);}
+  o.appendChild(i);m.appendChild(o);scrollBot();
+}
+function addCard(card){hideTyping();const m=document.getElementById('messages');const o=document.createElement('div');o.className='card-outer';const i=document.createElement('div');i.className='card-inner';i.appendChild(card);o.appendChild(i);m.appendChild(o);scrollBot();}
+function addChips(chips){const co=document.createElement('div');co.className='chip-outer';const ci=document.createElement('div');ci.className='chip-inner';const cr=document.createElement('div');cr.className='chip-row';chips.forEach(c=>{const b=document.createElement('button');b.className='chip';b.textContent=c;b.onclick=()=>chipSend(c);cr.appendChild(b);});ci.appendChild(cr);co.appendChild(ci);document.getElementById('messages').appendChild(co);scrollBot();}
+function userMsg(t){removeChips();const m=document.getElementById('messages');const o=document.createElement('div');o.className='msg-outer';const i=document.createElement('div');i.className='msg-inner';const r=document.createElement('div');r.className='msg-row user';r.innerHTML=`<div class="av user">MI</div><div class="bubble user">${t}</div>`;i.appendChild(r);o.appendChild(i);m.appendChild(o);scrollBot();}
+function chipSend(t){userMsg(t);setE(false);showTyping();setTimeout(()=>{hideTyping();setE(true);respond(t);document.getElementById('chat-input').focus();},520);}
+function sendMsg(){const i=document.getElementById('chat-input');const t=i.value.trim();if(!t)return;enterChat();userMsg(t);i.value='';i.style.height='';setE(false);showTyping();
+  const _k=getAIKey();
+  if(_k){callClaude(t,STRAT_SYSTEM_PROMPT,(r)=>{hideTyping();setE(true);botMsg(r);i.focus();});}else setTimeout(()=>{hideTyping();setE(true);respond(t);i.focus();},580);}
+function setE(on){document.getElementById('chat-input').disabled=!on;document.getElementById('send-btn').disabled=!on;}
+function scrollBot(){const m=document.getElementById('messages');setTimeout(()=>m.scrollTop=m.scrollHeight,50);}
+function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}
+function autosize(el){el.style.height='';el.style.height=Math.min(el.scrollHeight,110)+'px';}
+function autoW(el){el.style.height='';el.style.height=Math.min(el.scrollHeight,140)+'px';}
+
+document.getElementById('w-input').focus();
+
+// ── ANTHROPIC AI INTEGRATION ───────────────────────────────────────
+const AI_STORAGE_KEY='dmp_anthropic_key';
+let convHistory=[];
+
+function getAIKey(){return localStorage.getItem(AI_STORAGE_KEY)||'';}
+function saveAIKey(k){localStorage.setItem(AI_STORAGE_KEY,k);}
+function clearAIKey(){localStorage.removeItem(AI_STORAGE_KEY);}
+
+function showAIKeyModal(msg){
+  const old=document.getElementById('ai-modal');if(old)old.remove();
+  const d=document.createElement('div');
+  d.id='ai-modal';
+  d.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px"><div style="background:#12121e;border:1px solid rgba(200,168,75,.35);border-radius:14px;padding:28px 30px;width:400px;max-width:100%"><div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C8A84B" stroke-width="2.5" stroke-linecap="round"><path d="M12 2L2 7l10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5"/></svg><div style="font-size:15px;font-weight:700;color:#fff">Connect Claude AI</div></div><div style="font-size:11px;color:#888;margin-bottom:18px;line-height:1.6">${msg||'Enter your Anthropic API key to enable live AI responses. Stored in this browser only.'}</div><input id="ai-key-inp" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-api03-..." style="width:100%;background:#0a0a18;border:1px solid rgba(200,168,75,.3);border-radius:8px;padding:10px 12px;font-size:12px;font-family:monospace;color:#fff;outline:none;margin-bottom:12px;box-sizing:border-box" onkeydown="if(event.key==='Enter')doConnectKey()"><div style="display:flex;gap:8px;margin-bottom:14px"><button onclick="doConnectKey()" style="background:#C8A84B;color:#06060E;border:none;border-radius:7px;padding:9px 0;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;flex:1">Connect</button><button onclick="document.getElementById('ai-modal').remove()" style="background:transparent;color:#666;border:1px solid #2a2a3a;border-radius:7px;padding:9px 16px;font-size:12px;cursor:pointer;font-family:inherit">Cancel</button></div><div style="font-size:10px;color:#444;line-height:1.6">Get a key at <a href="https://console.anthropic.com" target="_blank" style="color:#C8A84B">console.anthropic.com</a></div></div></div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>document.getElementById('ai-key-inp')?.focus(),50);
+}
+
+function doConnectKey(){
+  const k=(document.getElementById('ai-key-inp')?.value||'').trim();
+  if(!k){alert('Please enter your API key.');return;}
+  if(!k.startsWith('sk-ant-')){alert('API keys start with sk-ant- — check the format.');return;}
+  saveAIKey(k);document.getElementById('ai-modal').remove();
+  updateAIStatus();convHistory=[];
+  botMsg('Claude AI connected. Dynamic responses now live. What would you like to explore?',[]);
+}
+
+function disconnectAI(){clearAIKey();updateAIStatus();convHistory=[];}
+
+function updateAIStatus(){
+  const btn=document.getElementById('ai-connect-btn');if(!btn)return;
+  const on=!!getAIKey();
+  btn.textContent=on?'\u2726 AI live':'Connect AI';
+  btn.style.color=on?'#4ade80':'#C8A84B';
+  btn.style.borderColor=on?'rgba(74,222,128,.3)':'rgba(200,168,75,.25)';
+  btn.title=on?'AI connected \u2014 click to disconnect':'Connect Claude AI for live responses';
+  btn.onclick=on?()=>{if(confirm('Disconnect Claude AI?'))disconnectAI();}:()=>showAIKeyModal();
+}
+
+async function callClaude(userText,sysPrompt,onDone){
+  const key=getAIKey();if(!key){showAIKeyModal();return;}
+  convHistory.push({role:'user',content:userText});
+  if(convHistory.length>20)convHistory=convHistory.slice(-20);
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'x-api-key':key,'anthropic-version':'2023-06-01','content-type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-haiku-4-5-20251001',max_tokens:1024,system:sysPrompt,messages:convHistory})
+    });
+    if(!resp.ok){
+      const err=await resp.json().catch(()=>({}));
+      if(resp.status===401){clearAIKey();updateAIStatus();showAIKeyModal('Key invalid or expired. Enter a new one.');return;}
+      throw new Error(err.error?.message||'HTTP '+resp.status);
+    }
+    const data=await resp.json();
+    const text=data.content?.[0]?.text||'(no response)';
+    convHistory.push({role:'assistant',content:text});
+    onDone(text);
+  }catch(e){
+    console.error('Claude:',e);hideTyping();setE(true);
+    botMsg('Could not reach Claude: '+e.message);
+  }
+}
+
+const STRAT_SYSTEM_PROMPT='You are the Senior Marketing Strategist AI for Disney Studios. KNOWLEDGE BASE: The Mandalorian & Grogu (theatrical May 22 2026) - campaign COMPLETE, 4 strategic pillars, 15+ brand partners, 11 markets, cross-company priority, positioned at intersection of cinematic event + fan franchise + family adventure. Vision Quest (Disney+ Oct 7-Nov 18 2026) - 8 episodes, showrunner Terry Matalas, brief IN PROGRESS, Marvel extension into Disney+ prestige. Avengers: Doomsday (theatrical Dec 18 2026) - brief not started, highest priority. Global Disney Marketing Calendar: 103 moments through Dec 2027 including Summer of Disney, FIFA World Cup, Star Wars Celebration Apr 2027, The Land launch Feb 2027, Project Gemini Feb 2027, Super Bowl LXI surround. FY27 Q2 (Jan-Mar 2027) = peak congestion: 4+ Tier 1 events in February. LENS: audience segmentation, brand positioning, messaging architecture, media strategy, partnership/co-marketing, competitive positioning, GTM sequencing. Direct and opinionated. Push past safe strategies. Executive-ready: 3-5 sentences, sharp, no filler. Internal Disney Marketing Platform tool.';
+
+document.addEventListener('DOMContentLoaded',()=>updateAIStatus());
+</script>
+</body>
+</html>
